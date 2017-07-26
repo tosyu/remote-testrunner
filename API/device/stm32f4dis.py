@@ -14,9 +14,10 @@
 
 import base
 
+import ConfigParser
 import re
 import signal
-import telnetlib
+import serial
 import time
 
 from ..common import utils
@@ -37,8 +38,6 @@ class Device(base.DeviceBase):
     '''
     def __init__(self):
         super(self.__class__, self).__init__('stm32f4dis')
-
-        self.telnet = telnetlib.Telnet()
 
         signal.signal(signal.SIGALRM, alarm_handler)
 
@@ -72,15 +71,29 @@ class Device(base.DeviceBase):
         '''
         Close connection.
         '''
-        self.telnet.close()
+        self.serial.close()
 
     def login(self):
         '''
         Create connection.
         '''
+        # Read serial infromation from the config file.
+        config = ConfigParser.ConfigParser()
+        config.read(utils.join(paths.CONFIG_PATH, 'serial.config'))
+
+        port = config.get('Serial', 'PORT')
+        parity = config.get('Serial', 'PARITY')
+        baudrate = int(config.get('Serial', 'BAUD'))
+        stopbits = int(config.get('Serial', 'STOPBITS'))
+        bytesize = int(config.get('Serial', 'BYTESIZE'))
+
         try:
-            self.telnet.open(self.address)
-            self.telnet.read_until('nsh> ')
+            self.serial = serial.Serial(port=port, baudrate=baudrate, parity=parity,
+                                        stopbits=stopbits, bytesize=bytesize)
+
+            # Press 3 enters to start the serial communication.
+            self.serial.write('\n\n\n')
+            self.serial.read_until('nsh> ')
 
         except Exception as e:
             console.fail(str(e))
@@ -89,7 +102,7 @@ class Device(base.DeviceBase):
         '''
         Send command to the device and set a timeout.
         '''
-        self.telnet.write('%s\n' % cmd)
+        self.serial.write('%s\n' % cmd)
 
     def read_data(self):
         '''
@@ -97,14 +110,16 @@ class Device(base.DeviceBase):
         '''
         signal.alarm(self.timeout)
 
-        stdout = self.telnet.read_until('nsh> ')
+        stdout = self.serial.read_until('nsh> ')
+
+        # Remove the first line (sent command) and the last
+        # line (nsh prompt) from the output.
+        stdout = stdout.split('\r\n')[1:-1]
 
         signal.alarm(0)
 
-        stdout = re.sub('\n\rnsh> ', '', stdout)
-        stdout = re.sub('nsh> ', '', stdout)
-
-        return stdout
+        # Convert the output to string.
+        return '\n'.join(stdout)
 
     def execute(self, cmd, args=[]):
         '''
@@ -140,6 +155,6 @@ class Device(base.DeviceBase):
         self.logout()
 
         # Make HTML friendly stdout.
-        stdout = stdout.rstrip('\n\r').replace('\n\r', '<br>')
+        stdout = stdout.replace('\n', '<br>')
 
         return exitcode, stdout, memory
