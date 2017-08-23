@@ -55,12 +55,12 @@ function set_info(device) {
 
 function fetch_keys(device) {
   var config = {
-    apiKey: "AIzaSyDMgyPr0V49Rdf5ODAU9nLY02ZGEUNoxiM",
-    authDomain: "remote-testrunner.firebaseapp.com",
-    databaseURL: "https://remote-testrunner.firebaseio.com",
-    projectId: "remote-testrunner",
-    storageBucket: "remote-testrunner.appspot.com",
-    messagingSenderId: "183582255751"
+    apiKey: "AIzaSyARcofxNc54KtBbhHSCCGF7C4gEJ2HT4W8",
+    authDomain: "iotjs-ee3fd.firebaseapp.com",
+    databaseURL: "https://iotjs-ee3fd.firebaseio.com",
+    projectId: "iotjs-ee3fd",
+    storageBucket: "iotjs-ee3fd.appspot.com",
+    messagingSenderId: "221110119208"
   };
 
   g_db_keys = []
